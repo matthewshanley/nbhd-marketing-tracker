@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ECG / NBHD Marketing Meeting Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #F4F6F7;
+  --panel: #FFFFFF;
+  --ink: #021d2b;
+  --ink-soft: #5C6E78;
+  --line: #ccd5de;
+  --navy: #021d2b;
+  --navy-soft: #033b57;
+  --clay: #AB5233;
+  --sage: #5e7361;
+  --sage-bg: #E7ECE8;
+  --clay-bg: #F3E4DD;
+  --amber-bg: #F5EAD6;
+  --amber: #A3782E;
+  --radius: 3px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Montserrat', sans-serif;
+  font-size:14px;
+  line-height:1.5;
+}
+::selection{background:var(--clay-bg);}
+
+header.top{
+  background:var(--navy);
+  color:#F4F6F7;
+  padding:20px 28px 0 28px;
+}
+.top-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  gap:12px;
+  border-bottom:1px solid rgba(204,213,222,0.2);
+  padding-bottom:16px;
+}
+.brand-eyebrow{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:11px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#9FB3BE;
+  margin:0 0 4px 0;
+}
+h1.brand{
+  font-family:'Montserrat', sans-serif;
+  font-weight:600;
+  font-size:22px;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  margin:0;
+  color:#F4F6F7;
+}
+.top-meta{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:11px;
+  color:#9FB3BE;
+  text-align:right;
+}
+.error-banner{
+  display:none;
+  background:#F3E4DD;
+  color:#7A2E17;
+  border-bottom:1px solid #E0B39E;
+  padding:10px 20px;
+  font-family:'Montserrat', sans-serif;
+  font-size:13px;
+}
+.error-banner.show{ display:block; }
+.error-banner button{
+  background:none; border:none; color:#7A2E17; text-decoration:underline; cursor:pointer;
+  font-family:'Montserrat', sans-serif; font-size:12px; margin-left:10px;
+}
+
+nav.tabs{
+  display:flex;
+  gap:2px;
+  padding:0 28px;
+  background:var(--navy);
+}
+nav.tabs button{
+  font-family:'Montserrat', sans-serif;
+  font-size:13px;
+  font-weight:500;
+  color:#8FA6B3;
+  background:transparent;
+  border:none;
+  padding:12px 16px;
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  transition:color .15s, border-color .15s;
+}
+nav.tabs button:hover{ color:#F4F6F7; }
+nav.tabs button.active{
+  color:#F4F6F7;
+  border-bottom:3px solid var(--clay);
+}
+
+main{
+  max-width:1240px;
+  margin:0 auto;
+  padding:24px 20px 60px 20px;
+}
+.view{display:none;}
+.view.active{display:block;}
+
+.kpi-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+  gap:10px;
+  margin-bottom:20px;
+}
+.kpi{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px 16px;
+}
+.kpi .label{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--ink-soft);
+  margin-bottom:6px;
+}
+.kpi .value{
+  font-family:'Montserrat', sans-serif;
+  font-size:24px;
+  font-weight:600;
+  color:var(--navy);
+}
+.kpi .value.warn{ color:var(--clay); }
+.kpi .sub{
+  font-size:11px;
+  color:var(--ink-soft);
+  margin-top:3px;
+}
+
+/* Colored status KPI blocks (Marketing Timeline) */
+.tl-kpi-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+  gap:10px;
+  margin-bottom:18px;
+}
+.tl-kpi{
+  border-radius:var(--radius);
+  padding:14px 18px;
+  color:#fff;
+}
+.tl-kpi .label{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  opacity:.85;
+  margin-bottom:6px;
+}
+.tl-kpi .value{ font-family:'Montserrat', sans-serif; font-size:28px; font-weight:700; }
+.tl-kpi.notstarted{ background:#7C8B93; }
+.tl-kpi.inprogress{ background:var(--navy-soft); }
+.tl-kpi.complete{ background:var(--sage); }
+.tl-kpi.overdue{ background:var(--clay); }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  margin-bottom:20px;
+}
+.panel-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  flex-wrap:wrap;
+  gap:8px;
+}
+.panel-head h2{
+  font-family:'Montserrat', sans-serif;
+  font-size:14px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin:0;
+  color:var(--navy);
+}
+.panel-body{ padding:18px; }
+
+.section-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:14px;
+}
+.section-header h2{
+  font-family:'Montserrat', sans-serif;
+  font-size:17px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  color:var(--navy);
+  margin:0;
+}
+.section-header .desc{
+  font-size:12.5px;
+  color:var(--ink-soft);
+  margin-top:2px;
+}
+
+button.primary{
+  background:var(--navy);
+  color:#F4F6F7;
+  border:none;
+  padding:9px 16px;
+  border-radius:var(--radius);
+  font-family:'Montserrat', sans-serif;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+}
+button.primary:hover{ background:var(--navy-soft); }
+button.ghost{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:8px 14px;
+  border-radius:var(--radius);
+  font-size:12.5px;
+  cursor:pointer;
+  font-family:'Montserrat', sans-serif;
+}
+button.ghost:hover{ border-color:var(--navy); }
+button.ghost.active{ border-color:var(--navy); background:var(--navy); color:#fff; }
+button.link{
+  background:none;border:none;color:var(--clay);cursor:pointer;font-size:12px;padding:2px 4px;
+  font-family:'Montserrat', sans-serif;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(190px,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+.form-grid.full{ grid-template-columns:1fr; }
+label{
+  display:block;
+  font-size:11.5px;
+  color:var(--ink-soft);
+  margin-bottom:4px;
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  letter-spacing:.02em;
+}
+input, select, textarea{
+  width:100%;
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:#FCFBF8;
+  font-family:'Montserrat', sans-serif;
+  font-size:13px;
+  color:var(--ink);
+}
+textarea{ resize:vertical; min-height:56px; }
+input:focus, select:focus, textarea:focus{
+  outline:none; border-color:var(--navy);
+}
+
+.entry-form{
+  border:1px dashed var(--line);
+  padding:16px;
+  border-radius:var(--radius);
+  background:#FBFAF6;
+  margin-bottom:18px;
+  display:none;
+}
+.entry-form.open{ display:block; }
+.form-actions{ display:flex; gap:8px; justify-content:flex-end; }
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12.5px;
+}
+th{
+  text-align:left;
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--ink-soft);
+  border-bottom:1px solid var(--line);
+  padding:8px 10px;
+  white-space:nowrap;
+}
+td{
+  padding:9px 10px;
+  border-bottom:1px solid #EFEAE0;
+  vertical-align:top;
+}
+tr:hover td{ background:#FBFAF6; }
+tr.overdue td{ background:var(--clay-bg); }
+tr.todo-done td{ color:var(--ink-soft); }
+tr.todo-done td:nth-child(2){ text-decoration:line-through; }
+td.num{ font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; text-align:right; white-space:nowrap; }
+td.notes{ max-width:220px; color:var(--ink-soft); }
+.tag{
+  display:inline-block;
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:10px;
+  padding:2px 7px;
+  border-radius:10px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+.tag.sage{ background:var(--sage-bg); color:var(--sage); }
+.tag.clay{ background:var(--clay-bg); color:var(--clay); }
+.tag.amber{ background:var(--amber-bg); color:var(--amber); }
+.tag.gray{ background:#EDEAE3; color:var(--ink-soft); }
+.tag.navy{ background:#E4EAEE; color:var(--navy-soft); }
+.week-mark{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+  font-size:10.5px;
+  color:var(--ink-soft);
+}
+.filters{
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center;
+}
+.filters input, .filters select{ width:auto; min-width:140px; }
+.empty{
+  text-align:center;
+  color:var(--ink-soft);
+  padding:30px 10px;
+  font-size:13px;
+}
+.edit-btn{ color:var(--navy-soft); background:none;border:1px solid var(--line);border-radius:var(--radius);cursor:pointer;font-size:11px;padding:3px 8px;margin-right:6px;font-family:'Montserrat', sans-serif; }
+.edit-btn:hover{ border-color:var(--navy); color:var(--navy); }
+.del-btn{ color:var(--ink-soft); background:none;border:none;cursor:pointer;font-size:14px; }
+.del-btn:hover{ color:var(--clay); }
+.activity-row{
+  display:flex; gap:12px; padding:9px 0; border-bottom:1px solid #EFEAE0; align-items:baseline;
+}
+.activity-row:last-child{ border-bottom:none; }
+.activity-cat{
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; font-size:10px; text-transform:uppercase;
+  color:var(--ink-soft); width:90px; flex-shrink:0;
+}
+.activity-text{ font-size:13px; }
+.activity-date{ margin-left:auto; font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; font-size:11px; color:var(--ink-soft); white-space:nowrap; }
+.headline-add-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.headline-add-row input[type=text]{ flex:2; min-width:220px; }
+.headline-add-row select{ flex:0 0 130px; }
+.headline-row{
+  display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid #EFEAE0;
+}
+.headline-row:last-child{ border-bottom:none; }
+.headline-row input[type=checkbox]{ width:16px; height:16px; margin-top:2px; cursor:pointer; accent-color: var(--navy); flex-shrink:0; }
+.headline-row .headline-title{ flex:1; font-size:13.5px; }
+.headline-row.archived .headline-title{ color:var(--ink-soft); text-decoration:line-through; }
+.headline-owner-tag{
+  font-family:'Montserrat', sans-serif; font-size:10px; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--ink-soft); white-space:nowrap; margin-left:8px;
+}
+canvas{ max-height:220px; }
+.loading-note{ text-align:center; padding:40px; color:var(--ink-soft); font-size:13px; }
+footer.foot{
+  text-align:center; padding:20px; color:var(--ink-soft); font-size:11px;
+  font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
+}
+
+/* ---------- MARKETING TIMELINE: view toggle + calendar ---------- */
+.tl-controls{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+.view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.view-toggle button{ border:none; border-radius:0; }
+.view-toggle button:not(:last-child){ border-right:1px solid var(--line); }
+
+.cal-controls{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px; }
+.cal-nav{ display:flex; gap:6px; align-items:center; }
+.cal-month-label{ font-family:'Montserrat', sans-serif; font-weight:600; font-size:15px; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); min-width:170px; text-align:center; }
+.cal-grid{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:#fff; }
+.cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); background:#F4F6F7; border-bottom:1px solid var(--line); }
+.cal-weekdays div{ padding:8px; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); text-align:center; font-family:'Montserrat', sans-serif; }
+.cal-body{ display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-cell{ border-right:1px solid #EFEAE0; border-bottom:1px solid #EFEAE0; min-height:96px; padding:6px; position:relative; }
+.cal-cell:nth-child(7n){ border-right:none; }
+.cal-cell.blank{ background:#FAFAF8; }
+.cal-date-num{ font-size:11px; color:var(--ink-soft); font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; display:inline-block; }
+.cal-date-num.today{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--navy); color:#fff; font-weight:600; }
+.cal-pill{
+  margin-top:4px; font-size:10px; padding:3px 6px; border-radius:3px; color:#fff; cursor:pointer;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Montserrat', sans-serif;
+}
+.status-notstarted{ background:#7C8B93; }
+.status-inprogress{ background:var(--amber); }
+.status-underreview{ background:var(--navy-soft); }
+.status-handedoff{ background:var(--clay); }
+.status-published{ background:var(--sage); }
+.legend-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11px; color:var(--ink-soft); align-items:center; }
+.legend-dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <p class="brand-eyebrow">Experiential Capital Group &mdash; The Neighborhood Hotel</p>
+      <h1 class="brand">Marketing Meeting Tracker</h1>
+    </div>
+    <div class="top-meta" id="topMeta">Loading&hellip;</div>
+  </div>
+  <nav class="tabs">
+    <button data-view="overview" class="active">Overview</button>
+    <button data-view="todos">To-Dos</button>
+    <button data-view="timeline">Marketing Timeline</button>
+  </nav>
+</header>
+<div class="error-banner" id="errorBanner">
+  <span id="errorBannerText"></span>
+  <button type="button" id="errorBannerDismiss">Dismiss</button>
+</div>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="view active" id="view-overview">
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Headlines</h2>
+        <span class="week-mark" id="headlinesArchiveToggle" style="cursor:pointer;">Show Archived (<span id="archivedCount">0</span>)</span>
+      </div>
+      <div class="panel-body">
+        <div class="headline-add-row">
+          <input type="text" id="headlineTitleInput" placeholder="New headline for the next meeting...">
+          <select id="headlineOwnerInput">
+            <option value="">Owner</option>
+            <option>Jonathan</option><option>Megan</option><option>Emma</option><option>Matthew</option><option>Kaitlinn</option><option>Other</option>
+          </select>
+          <button class="primary" type="button" id="addHeadlineBtn">Add</button>
+        </div>
+        <div id="headlinesActiveList"></div>
+        <div id="headlinesArchiveList" style="display:none; margin-top:10px; border-top:1px solid var(--line); padding-top:10px;"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Launching Next 7 Days</h2><span class="week-mark">from Marketing Timeline</span></div>
+      <div class="panel-body" id="upcomingFeed"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Log Volume by Week</h2><span class="week-mark" id="chartRange"></span></div>
+      <div class="panel-body"><canvas id="weeklyChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Recent Activity</h2></div>
+      <div class="panel-body" id="activityFeed"></div>
+    </div>
+  </div>
+
+  <!-- TO-DOS -->
+  <div class="view" id="view-todos">
+    <div class="section-header">
+      <div><h2>To-Dos</h2><div class="desc">Marketing action items between meetings &mdash; owners, due dates, status.</div></div>
+      <button class="primary" data-toggle-form="todos">+ Add a To-Do</button>
+    </div>
+    <form class="entry-form" id="form-todos">
+      <div class="form-grid">
+        <div><label>Task</label><input required name="task" placeholder="e.g. Confirm Fall Outlook resend date"></div>
+        <div><label>Owner</label>
+          <select name="owner"><option>Jonathan</option><option>Megan</option><option>Emma</option><option>Matthew</option><option>Kaitlinn</option><option>Other</option></select>
+        </div>
+        <div><label>Due Date</label><input type="date" name="dueDate"></div>
+        <div><label>Status</label>
+          <select name="status"><option>Open</option><option>Done</option></select>
+        </div>
+        <div><label>Logged By</label>
+          <select name="loggedBy"><option>Jonathan</option><option>Megan</option><option>Emma</option><option>Matthew</option><option>Kaitlinn</option><option>Other</option></select>
+        </div>
+      </div>
+      <div class="form-grid full"><div><label>Notes</label><textarea name="notes"></textarea></div></div>
+      <div class="form-actions">
+        <button type="button" class="ghost" data-toggle-form="todos">Cancel</button>
+        <button type="submit" class="primary">Save To-Do</button>
+      </div>
+    </form>
+    <div class="filters">
+      <input placeholder="Search to-dos..." id="search-todos">
+      <select id="filter-todos-owner"><option value="">All Owners</option></select>
+      <button class="ghost active" id="toggleShowDoneBtn" type="button">Show Completed</button>
+    </div>
+    <div class="panel"><div class="panel-body" style="overflow-x:auto;"><table id="table-todos"><thead></thead><tbody></tbody></table></div></div>
+  </div>
+
+  <!-- MARKETING TIMELINE -->
+  <div class="view" id="view-timeline">
+    <div class="section-header">
+      <div><h2>Marketing Timeline</h2><div class="desc">Campaigns and launches across properties &mdash; due dates, publish dates, channel, status.</div></div>
+      <button class="primary" data-toggle-form="timeline">+ Add Timeline Item</button>
+    </div>
+
+    <form class="entry-form" id="form-timeline">
+      <div class="form-grid">
+        <div><label>Campaign</label><input name="campaign" list="campaignSuggestions" placeholder="e.g. Fall Outlook"><datalist id="campaignSuggestions"></datalist></div>
+        <div><label>Content / Piece</label><input required name="content" placeholder="e.g. Fall Outlook — email 1"></div>
+        <div><label>Property</label>
+          <select name="property">
+            <option>Portfolio</option>
+            <option>Lincoln Park</option><option>Little Italy</option><option>Grand Beach</option><option>New Buffalo</option>
+          </select>
+        </div>
+        <div><label>Content Type</label>
+          <select name="contentType">
+            <option>Long-form Newsletter</option><option>Short-Form Newsletter</option><option>Newsletter Template</option>
+            <option>Social Asset</option><option>Paid Ad</option><option>Event Page</option><option>Partnership</option>
+          </select>
+        </div>
+        <div><label>Channel</label>
+          <select name="channel">
+            <option>Newsletter</option><option>META Ads</option><option>Digital Ad</option><option>Print Ad</option>
+            <option>LinkedIn</option><option>Facebook (Organic)</option><option>IG (Static Post)</option><option>IG (Story)</option>
+            <option>IG (Reel)</option><option>Influencer</option><option>Event Page</option>
+          </select>
+        </div>
+        <div><label>Content Due Date</label><input type="date" name="dueDate"></div>
+        <div><label>Publish / Launch Date</label><input type="date" name="publishDate" required></div>
+        <div><label>Owner</label>
+          <select name="owner"><option>Jonathan</option><option>Megan</option><option>Emma</option><option>Matthew</option><option>Kaitlinn</option><option>Other</option></select>
+        </div>
+        <div><label>Status</label>
+          <select name="status"><option>Not Started</option><option>In progress</option><option>Under review</option><option>Handed Off</option><option>Published</option></select>
+        </div>
+        <div><label>CTA Link</label><input name="ctaLink" placeholder="https://..."></div>
+      </div>
+      <div class="form-grid full"><div><label>Notes</label><textarea name="notes"></textarea></div></div>
+      <div class="form-actions">
+        <button type="button" class="ghost" data-toggle-form="timeline">Cancel</button>
+        <button type="submit" class="primary">Save Timeline Item</button>
+      </div>
+    </form>
+
+    <div class="tl-kpi-row" id="tlKpiRow"></div>
+
+    <div class="filters">
+      <input placeholder="Search timeline..." id="search-timeline">
+      <select id="filter-timeline-campaign"><option value="">All Campaigns</option></select>
+      <select id="filter-timeline-property"><option value="">All Properties</option></select>
+      <select id="filter-timeline-channel"><option value="">All Channels</option></select>
+      <select id="filter-timeline-status"><option value="">All Statuses</option>
+        <option>Not Started</option><option>In progress</option><option>Under review</option><option>Handed Off</option><option>Published</option>
+      </select>
+    </div>
+
+    <div class="tl-controls">
+      <div class="view-toggle">
+        <button class="ghost active" id="viewCalendarBtn" type="button">Calendar</button>
+        <button class="ghost" id="viewTableBtn" type="button">Table</button>
+      </div>
+    </div>
+
+    <div class="panel" id="timelineCalendarWrap">
+      <div class="panel-body">
+        <div class="cal-controls">
+          <div class="cal-nav">
+            <button class="ghost" id="calPrevBtn" type="button">&larr;</button>
+            <button class="ghost" id="calTodayBtn" type="button">Today</button>
+            <button class="ghost" id="calNextBtn" type="button">&rarr;</button>
+          </div>
+          <div class="cal-month-label" id="calMonthLabel"></div>
+          <div></div>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+          <div class="cal-body" id="calBody"></div>
+        </div>
+        <div class="legend-row" id="calLegend"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="timelineTableWrap" style="display:none;">
+      <div class="panel-body" style="overflow-x:auto;"><table id="table-timeline"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+</main>
+<footer class="foot">NBHD MARKETING TRACKER &mdash; SHARED LOG, UPDATED CONTINUOUSLY</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// --- SUPABASE CONFIG ---
+// Fill these in with your project's values: Supabase dashboard > Project Settings > API
+const SUPABASE_URL = 'https://tkvpahklxjexkyokpvxx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_2xvtP8fX6RABOYTJkDbOxA_zcT1Y1jy';
+const supabaseClient = (SUPABASE_URL.startsWith('http'))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const CATS = ['headlines','todos','timeline'];
+const TABLE_CATS = ['todos','timeline'];
+const CAT_LABEL = {headlines:'Headline', todos:'To-Do', timeline:'Timeline'};
+let DATA = {headlines:[], todos:[], timeline:[]};
+let chartInstance = null;
+let showCompletedTodos = false;
+
+function uid(){ return 'e' + Date.now() + Math.random().toString(36).slice(2,8); }
+function todayISO(){ return new Date().toISOString(); }
+function todayMidnight(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function fmtDate(d){ if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+function parseDate(d){ if(!d) return null; const dt = new Date(d + 'T00:00:00'); return isNaN(dt) ? null : dt; }
+function sameDay(a,b){ return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function isOverdue(dueDate, status){
+  if(!dueDate || status==='Done') return false;
+  const d = parseDate(dueDate);
+  return d && d < todayMidnight();
+}
+
+// Weekly cadence anchored to a Monday. Adjust PERIOD_ANCHOR if the marketing
+// meeting lands on a different weekday — everything else derives from it.
+const PERIOD_ANCHOR = new Date(2026, 7, 10); // Aug 10, 2026 — a Monday
+PERIOD_ANCHOR.setHours(0,0,0,0);
+const PERIOD_LENGTH_DAYS = 7;
+
+function periodStart(d){
+  const dt = new Date(d);
+  dt.setHours(0,0,0,0);
+  const diffDays = Math.floor((dt - PERIOD_ANCHOR) / 86400000);
+  const periodIndex = Math.floor(diffDays / PERIOD_LENGTH_DAYS);
+  const start = new Date(PERIOD_ANCHOR);
+  start.setDate(start.getDate() + periodIndex * PERIOD_LENGTH_DAYS);
+  return start;
+}
+function periodEnd(d){
+  const end = periodStart(d);
+  end.setDate(end.getDate() + PERIOD_LENGTH_DAYS - 1);
+  return end;
+}
+function periodKey(d){ return periodStart(d).toISOString().slice(0,10); }
+
+function showError(message){
+  const banner = document.getElementById('errorBanner');
+  const text = document.getElementById('errorBannerText');
+  if(!banner || !text) return;
+  text.textContent = message;
+  banner.classList.add('show');
+}
+function hideError(){
+  const banner = document.getElementById('errorBanner');
+  if(banner) banner.classList.remove('show');
+}
+
+async function loadAll(){
+  CATS.forEach(cat=> DATA[cat] = []);
+  if(!supabaseClient){
+    console.error('Supabase is not configured — see SUPABASE_URL / SUPABASE_ANON_KEY at top of this file.');
+    return;
+  }
+  try{
+    const { data, error } = await supabaseClient
+      .from('marketing_tracker_entries')
+      .select('*')
+      .order('logged_date', { ascending: false });
+    if(error) throw error;
+    (data || []).forEach(row=>{
+      const entry = { ...row.payload, id: row.id, loggedDate: row.logged_date, loggedBy: row.logged_by };
+      if(DATA[row.category]) DATA[row.category].push(entry);
+    });
+  }catch(e){
+    console.error('load failed', e);
+    showError('Could not load the shared log — check your connection and refresh. Details: ' + (e.message || e));
+  }
+}
+
+async function insertRemote(cat, entry){
+  if(!supabaseClient) return;
+  const { id, loggedDate, loggedBy, ...rest } = entry;
+  try{
+    const { error } = await supabaseClient.from('marketing_tracker_entries').insert({
+      id, category: cat, payload: rest, logged_date: loggedDate, logged_by: loggedBy || null
+    });
+    if(error){
+      console.error('insert failed', error);
+      showError(`Save failed for "${cat}" — it may not have actually saved. Details: ${error.message || error}`);
+    }
+  }catch(e){
+    console.error('insert failed', e);
+    showError(`Save failed for "${cat}" — it may not have actually saved. Check your connection and try again.`);
+  }
+}
+
+async function updateRemote(cat, entry){
+  if(!supabaseClient) return;
+  const { id, loggedDate, loggedBy, ...rest } = entry;
+  try{
+    const { error } = await supabaseClient.from('marketing_tracker_entries')
+      .update({ payload: rest, logged_by: loggedBy || null })
+      .eq('id', id);
+    if(error){
+      console.error('update failed', error);
+      showError(`Update failed for "${cat}" — the change may not have saved. Details: ${error.message || error}`);
+    }
+  }catch(e){
+    console.error('update failed', e);
+    showError(`Update failed for "${cat}" — the change may not have saved. Check your connection and try again.`);
+  }
+}
+
+async function deleteRemote(id){
+  if(!supabaseClient) return;
+  try{
+    const { error } = await supabaseClient.from('marketing_tracker_entries').delete().eq('id', id);
+    if(error){
+      console.error('delete failed', error);
+      showError(`Delete failed — the item may still exist in the database. Details: ${error.message || error}`);
+    }
+  }catch(e){
+    console.error('delete failed', e);
+    showError('Delete failed — the item may still exist in the database. Check your connection and try again.');
+  }
+}
+
+const SAVE_LABELS = { todos:'Save To-Do', timeline:'Save Timeline Item' };
+const UPDATE_LABELS = { todos:'Update To-Do', timeline:'Update Timeline Item' };
+
+function toggleForm(cat){
+  const f = document.getElementById('form-'+cat);
+  const isOpen = f.classList.contains('open');
+  if(isOpen){
+    f.classList.remove('open');
+  }else{
+    f.reset();
+    f.classList.add('open');
+  }
+  delete f.dataset.editingId;
+  const btn = f.querySelector('button[type="submit"]');
+  if(btn) btn.textContent = SAVE_LABELS[cat] || 'Save';
+}
+
+function populateForm(form, entry){
+  Array.from(form.elements).forEach(el=>{
+    if(!el.name) return;
+    el.value = (entry[el.name] !== undefined && entry[el.name] !== null) ? entry[el.name] : '';
+  });
+}
+
+function startEdit(cat, id){
+  const entry = DATA[cat].find(e=>e.id===id);
+  if(!entry) return;
+  const form = document.getElementById('form-'+cat);
+  populateForm(form, entry);
+  form.dataset.editingId = id;
+  form.classList.add('open');
+  const btn = form.querySelector('button[type="submit"]');
+  if(btn) btn.textContent = UPDATE_LABELS[cat] || 'Update';
+  form.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function submitEntry(ev, cat){
+  ev.preventDefault();
+  const form = ev.target;
+  const fd = new FormData(form);
+  const obj = {};
+  for(const [k,v] of fd.entries()) obj[k] = v;
+
+  const editingId = form.dataset.editingId;
+  if(editingId){
+    const idx = DATA[cat].findIndex(e=>e.id===editingId);
+    const original = idx>=0 ? DATA[cat][idx] : null;
+    // Merge onto the original rather than replacing outright, so any fields
+    // not present on this form survive an edit.
+    const merged = original ? { ...original, ...obj } : obj;
+    merged.id = editingId;
+    merged.loggedDate = original ? original.loggedDate : todayISO();
+    if(idx>=0) DATA[cat][idx] = merged; else DATA[cat].unshift(merged);
+    updateRemote(cat, merged);
+  }else{
+    obj.id = uid();
+    obj.loggedDate = todayISO();
+    DATA[cat].unshift(obj);
+    insertRemote(cat, obj);
+  }
+
+  form.reset();
+  form.classList.remove('open');
+  delete form.dataset.editingId;
+  const btn = form.querySelector('button[type="submit"]');
+  if(btn) btn.textContent = SAVE_LABELS[cat] || 'Save';
+  renderTable(cat);
+  renderOverview();
+  if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
+  return false;
+}
+
+function deleteEntry(cat, id){
+  DATA[cat] = DATA[cat].filter(e=>e.id!==id);
+  deleteRemote(id);
+  renderTable(cat);
+  renderOverview();
+  if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
+}
+
+function switchView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  if(view==='timeline'){ renderTimelineKpis(); if(timelineViewMode==='calendar') renderCalendar(); else renderTable('timeline'); }
+}
+
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchView(btn.dataset.view));
+});
+
+function esc(s){
+  if(s===undefined||s===null) return '';
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- TABLE RENDERING ----------
+
+const STATUS_TAG = {
+  'Not Started':'gray', 'In progress':'amber', 'Under review':'navy', 'Handed Off':'clay', 'Published':'sage'
+};
+
+const TABLE_DEFS = {
+  todos: {
+    headers: ['Done','Task','Owner','Due Date','Logged','Notes',''],
+    row: e=>{
+      const isDone = e.status === 'Done';
+      const overdue = isOverdue(e.dueDate, e.status);
+      return `<tr class="${isDone?'todo-done':''} ${overdue?'overdue':''}">
+        <td><input type="checkbox" ${isDone?'checked':''} data-todo-id="${e.id}"></td>
+        <td>${esc(e.task)}</td>
+        <td>${esc(e.owner)}</td>
+        <td class="num">${e.dueDate? (overdue? '<span class="tag clay">'+fmtDate(e.dueDate)+' — overdue</span>' : fmtDate(e.dueDate)) : '—'}</td>
+        <td class="week-mark">${fmtDate(e.loggedDate)}<br>${esc(e.loggedBy||'')}</td>
+        <td class="notes">${esc(e.notes)}</td>
+        <td><button class="edit-btn" data-edit-cat="todos" data-edit-id="${e.id}">Edit</button><button class="del-btn" data-del-cat="todos" data-del-id="${e.id}">✕</button></td>
+      </tr>`;
+    },
+    filter: (e,q,ownerVal)=>{
+      if(!showCompletedTodos && e.status==='Done') return false;
+      const hay = [e.task,e.owner,e.notes].join(' ').toLowerCase();
+      if(q && !hay.includes(q)) return false;
+      if(ownerVal && e.owner !== ownerVal) return false;
+      return true;
+    }
+  },
+  timeline: {
+    headers: ['Campaign','Content','Property','Type','Channel','Due Date','Publish Date','Owner','Status','Notes',''],
+    row: e=>{
+      const statusColor = STATUS_TAG[e.status] || 'gray';
+      const linkHtml = e.ctaLink ? `<div class="notes"><a href="${esc(e.ctaLink)}" target="_blank" rel="noopener">Link ↗</a></div>` : '';
+      return `<tr>
+        <td>${esc(e.campaign) || '<span style="color:var(--ink-soft)">—</span>'}</td>
+        <td>${esc(e.content)}${linkHtml}</td>
+        <td>${esc(e.property)}</td>
+        <td><span class="tag gray">${esc(e.contentType||'')}</span></td>
+        <td>${esc(e.channel)}</td>
+        <td class="num">${fmtDate(e.dueDate)}</td>
+        <td class="num">${fmtDate(e.publishDate)}</td>
+        <td>${esc(e.owner)}</td>
+        <td><span class="tag ${statusColor}">${esc(e.status||'')}</span></td>
+        <td class="notes">${esc(e.notes)}</td>
+        <td><button class="edit-btn" data-edit-cat="timeline" data-edit-id="${e.id}">Edit</button><button class="del-btn" data-del-cat="timeline" data-del-id="${e.id}">✕</button></td>
+      </tr>`;
+    },
+    filter: (e,q,campaignVal,propVal,channelVal,statusVal)=>{
+      const hay = [e.campaign,e.content,e.property,e.channel,e.owner,e.notes].join(' ').toLowerCase();
+      if(q && !hay.includes(q)) return false;
+      if(campaignVal && e.campaign !== campaignVal) return false;
+      if(propVal && e.property !== propVal) return false;
+      if(channelVal && e.channel !== channelVal) return false;
+      if(statusVal && e.status !== statusVal) return false;
+      return true;
+    }
+  }
+};
+
+function getTimelineFilterValues(){
+  return {
+    q: document.getElementById('search-timeline').value.trim().toLowerCase(),
+    campaign: document.getElementById('filter-timeline-campaign').value,
+    property: document.getElementById('filter-timeline-property').value,
+    channel: document.getElementById('filter-timeline-channel').value,
+    status: document.getElementById('filter-timeline-status').value
+  };
+}
+
+function populateTimelineFilterOptions(){
+  const campaigns = [...new Set(DATA.timeline.map(e=>e.campaign).filter(Boolean))].sort();
+  const props = [...new Set(DATA.timeline.map(e=>e.property).filter(Boolean))];
+  const chans = [...new Set(DATA.timeline.map(e=>e.channel).filter(Boolean))];
+
+  const campSel = document.getElementById('filter-timeline-campaign');
+  const curCamp = campSel.value;
+  campSel.innerHTML = '<option value="">All Campaigns</option>' + campaigns.map(c=>`<option ${c===curCamp?'selected':''}>${esc(c)}</option>`).join('');
+
+  const propSel = document.getElementById('filter-timeline-property');
+  const curProp = propSel.value;
+  propSel.innerHTML = '<option value="">All Properties</option>' + props.map(p=>`<option ${p===curProp?'selected':''}>${esc(p)}</option>`).join('');
+
+  const chanSel = document.getElementById('filter-timeline-channel');
+  const curChan = chanSel.value;
+  chanSel.innerHTML = '<option value="">All Channels</option>' + chans.map(c=>`<option ${c===curChan?'selected':''}>${esc(c)}</option>`).join('');
+
+  const datalist = document.getElementById('campaignSuggestions');
+  if(datalist) datalist.innerHTML = campaigns.map(c=>`<option value="${esc(c)}">`).join('');
+}
+
+function renderTable(cat){
+  const def = TABLE_DEFS[cat];
+  const table = document.getElementById('table-'+cat);
+  const searchEl = document.getElementById('search-'+cat);
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  let extra = [];
+  if(cat==='todos'){
+    const sel = document.getElementById('filter-todos-owner');
+    const owners = [...new Set(DATA.todos.map(e=>e.owner).filter(Boolean))];
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Owners</option>' + owners.map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('');
+    extra = [sel.value];
+  }
+  if(cat==='timeline'){
+    populateTimelineFilterOptions();
+    const f = getTimelineFilterValues();
+    extra = [f.campaign, f.property, f.channel, f.status];
+  }
+
+  let rows = DATA[cat].slice();
+  if(cat==='todos'){
+    rows.sort((a,b)=>{
+      const ad = a.dueDate ? new Date(a.dueDate) : null;
+      const bd = b.dueDate ? new Date(b.dueDate) : null;
+      if(ad && bd) return ad - bd;
+      if(ad) return -1;
+      if(bd) return 1;
+      return new Date(b.loggedDate) - new Date(a.loggedDate);
+    });
+  }else if(cat==='timeline'){
+    // Grouped by campaign, then soonest publish date within each campaign.
+    rows.sort((a,b)=>{
+      const ac = (a.campaign||'').toLowerCase(), bc = (b.campaign||'').toLowerCase();
+      if(ac !== bc) return ac.localeCompare(bc);
+      const ad = a.publishDate ? new Date(a.publishDate) : null;
+      const bd = b.publishDate ? new Date(b.publishDate) : null;
+      if(ad && bd) return ad - bd;
+      if(ad) return -1;
+      if(bd) return 1;
+      return 0;
+    });
+  }
+  rows = rows.filter(e=>def.filter(e,q,...extra));
+
+  table.querySelector('thead').innerHTML = '<tr>' + def.headers.map(h=>`<th>${h}</th>`).join('') + '</tr>';
+  table.querySelector('tbody').innerHTML = rows.length
+    ? rows.map(def.row).join('')
+    : `<tr><td colspan="${def.headers.length}" class="empty">No entries yet. Log the first one above.</td></tr>`;
+}
+
+function renderAllTables(){ TABLE_CATS.forEach(renderTable); }
+
+// ---------- HEADLINES ----------
+
+async function addHeadline(title, owner){
+  title = title.trim();
+  if(!title) return;
+  const entry = { id: uid(), title, archived: false, loggedDate: todayISO(), loggedBy: owner || '' };
+  DATA.headlines.unshift(entry);
+  insertRemote('headlines', entry);
+  renderHeadlines();
+}
+
+function toggleHeadline(id){
+  const entry = DATA.headlines.find(e=>e.id===id);
+  if(!entry) return;
+  entry.archived = !entry.archived;
+  entry.archivedDate = entry.archived ? todayISO() : null;
+  updateRemote('headlines', entry);
+  renderHeadlines();
+  renderOverview();
+}
+
+function deleteHeadline(id){
+  DATA.headlines = DATA.headlines.filter(e=>e.id!==id);
+  deleteRemote(id);
+  renderHeadlines();
+  renderOverview();
+}
+
+function toggleTodoStatus(id){
+  const entry = DATA.todos.find(e=>e.id===id);
+  if(!entry) return;
+  entry.status = entry.status === 'Done' ? 'Open' : 'Done';
+  updateRemote('todos', entry);
+  renderTable('todos');
+  renderOverview();
+}
+
+let headlinesArchiveOpen = false;
+
+function renderHeadlines(){
+  const active = DATA.headlines.filter(e=>!e.archived).sort((a,b)=> new Date(b.loggedDate) - new Date(a.loggedDate));
+  const archived = DATA.headlines.filter(e=>e.archived).sort((a,b)=> new Date(b.archivedDate||b.loggedDate) - new Date(a.archivedDate||a.loggedDate));
+
+  const rowHtml = (e, isArchived)=> `
+    <div class="headline-row${isArchived?' archived':''}">
+      <input type="checkbox" ${isArchived?'checked':''} data-headline-id="${e.id}">
+      <span class="headline-title">${esc(e.title)}</span>
+      ${e.loggedBy? `<span class="headline-owner-tag">${esc(e.loggedBy)}</span>`:''}
+      <button class="del-btn" data-del-headline-id="${e.id}" style="margin-left:4px;">✕</button>
+    </div>`;
+
+  document.getElementById('headlinesActiveList').innerHTML = active.length
+    ? active.map(e=>rowHtml(e,false)).join('')
+    : '<div class="empty" style="padding:14px 0;">No open headlines — add one above for the next meeting.</div>';
+
+  document.getElementById('archivedCount').textContent = archived.length;
+  document.getElementById('headlinesArchiveList').innerHTML = archived.length
+    ? archived.map(e=>rowHtml(e,true)).join('')
+    : '<div class="empty" style="padding:14px 0;">No archived headlines yet.</div>';
+}
+
+// ---------- OVERVIEW ----------
+
+function renderOverview(){
+  const now = new Date();
+  const thisPeriodKey = periodKey(now);
+  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
+
+  const openTodos = DATA.todos.filter(e=>e.status!=='Done');
+  const overdueTodos = openTodos.filter(e=>isOverdue(e.dueDate, e.status));
+  const headlinesPending = DATA.headlines.filter(e=>!e.archived).length;
+  const launchingSoon = DATA.timeline.filter(e=>{
+    const d = parseDate(e.publishDate);
+    return d && d >= todayMidnight() && d <= in7;
+  });
+
+  const countThisWeek = cat => DATA[cat].filter(e=>periodKey(e.loggedDate)===thisPeriodKey).length;
+
+  const kpis = [
+    {label:'Open To-Dos', value: openTodos.length, sub: DATA.todos.length+' total logged'},
+    {label:'Overdue To-Dos', value: overdueTodos.length, sub: 'past due date', warn: overdueTodos.length>0},
+    {label:'Headlines Pending', value: headlinesPending, sub: DATA.headlines.length+' total logged'},
+    {label:'Launching Next 7 Days', value: launchingSoon.length, sub: DATA.timeline.length+' timeline items total'},
+    {label:'Logged This Week', value: countThisWeek('headlines')+countThisWeek('todos')+countThisWeek('timeline'), sub: 'across all categories'}
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+    <div class="kpi">
+      <div class="label">${k.label}</div>
+      <div class="value${k.warn?' warn':''}">${k.value}</div>
+      <div class="sub">${k.sub}</div>
+    </div>`).join('');
+
+  // upcoming timeline feed
+  const upcomingSorted = launchingSoon.slice().sort((a,b)=> new Date(a.publishDate) - new Date(b.publishDate));
+  document.getElementById('upcomingFeed').innerHTML = upcomingSorted.length ? upcomingSorted.map(e=>{
+    const statusColor = STATUS_TAG[e.status] || 'gray';
+    return `<div class="activity-row">
+      <span class="activity-cat">${esc(e.campaign||e.property||'—')}</span>
+      <span class="activity-text"><strong>${esc(e.content)}</strong>${e.channel? ' — '+esc(e.channel):''}
+        <span class="tag ${statusColor}" style="margin-left:6px;">${esc(e.status||'')}</span>
+        ${e.owner? '<br><span style="color:var(--ink-soft);">'+esc(e.owner)+'</span>':''}
+      </span>
+      <span class="activity-date">${fmtDate(e.publishDate)}</span>
+    </div>`;
+  }).join('') : '<div class="empty">Nothing launching in the next 7 days — add items on the Marketing Timeline tab.</div>';
+
+  // recent activity feed
+  const allEntries = [];
+  CATS.forEach(cat=>{
+    DATA[cat].forEach(e=>allEntries.push({cat, e}));
+  });
+  allEntries.sort((a,b)=> new Date(b.e.loggedDate) - new Date(a.e.loggedDate));
+  const recent = allEntries.slice(0,10);
+  document.getElementById('activityFeed').innerHTML = recent.length ? recent.map(({cat,e})=>{
+    let text = '';
+    if(cat==='headlines') text = `Headline added: "${e.title||''}"`;
+    if(cat==='todos') text = `${e.task||'Untitled to-do'} — ${e.status||'status pending'}`;
+    if(cat==='timeline') text = `${e.content||'Untitled item'}${e.campaign? ' ('+e.campaign+')':''} — ${e.status||'—'}`;
+    return `<div class="activity-row">
+      <span class="activity-cat">${CAT_LABEL[cat]}</span>
+      <span class="activity-text">${esc(text)}</span>
+      <span class="activity-date">${fmtDate(e.loggedDate)}</span>
+    </div>`;
+  }).join('') : '<div class="empty">No activity logged yet across any category.</div>';
+
+  document.getElementById('topMeta').textContent = 'Week of ' + fmtDate(periodStart(now)) + ' – ' + fmtDate(periodEnd(now)) + ' — shared log';
+
+  try{
+    renderWeeklyChart();
+  }catch(e){
+    console.error('chart render failed', e);
+  }
+}
+
+function renderWeeklyChart(){
+  const now = new Date();
+  const periods = [];
+  const weeksBack = Math.floor((now - PERIOD_ANCHOR)/86400000/PERIOD_LENGTH_DAYS);
+  for(let i=7;i>=0;i--){
+    const d = new Date(PERIOD_ANCHOR);
+    d.setDate(d.getDate() + (weeksBack - i)*PERIOD_LENGTH_DAYS);
+    periods.push(periodKey(d));
+  }
+  const seriesData = {};
+  CATS.forEach(cat=>{
+    seriesData[cat] = periods.map(pk => DATA[cat].filter(e=>periodKey(e.loggedDate)===pk).length);
+  });
+  const labels = periods.map(pk=>{
+    const d = new Date(pk);
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  });
+  document.getElementById('chartRange').textContent = labels[0] + ' – ' + labels[labels.length-1];
+
+  const ctx = document.getElementById('weeklyChart').getContext('2d');
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Headlines', data:seriesData.headlines, backgroundColor:'#033b57'},
+        {label:'To-Dos', data:seriesData.todos, backgroundColor:'#AB5233'},
+        {label:'Timeline', data:seriesData.timeline, backgroundColor:'#5e7361'}
+      ]
+    },
+    options:{
+      responsive:true,
+      scales:{ x:{ stacked:true, grid:{display:false} }, y:{ stacked:true, beginAtZero:true, ticks:{precision:0} } },
+      plugins:{ legend:{ position:'bottom', labels:{ font:{family:"'Montserrat'", size:11} } } }
+    }
+  });
+}
+
+// ---------- MARKETING TIMELINE: KPIs, view toggle, calendar ----------
+
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z]/g,''); }
+
+function timelineBucket(e){
+  const refDate = parseDate(e.dueDate) || parseDate(e.publishDate);
+  const overdue = refDate && refDate < todayMidnight() && e.status !== 'Published';
+  if(overdue) return 'overdue';
+  if(e.status === 'Published') return 'complete';
+  if(e.status === 'Not Started' || !e.status) return 'notstarted';
+  return 'inprogress'; // In progress, Under review, Handed Off
+}
+
+function renderTimelineKpis(){
+  const counts = { notstarted:0, inprogress:0, complete:0, overdue:0 };
+  DATA.timeline.forEach(e=> counts[timelineBucket(e)]++ );
+  const blocks = [
+    {key:'notstarted', label:'Not Started', value:counts.notstarted},
+    {key:'inprogress', label:'In Progress', value:counts.inprogress},
+    {key:'complete', label:'Published', value:counts.complete},
+    {key:'overdue', label:'Overdue', value:counts.overdue}
+  ];
+  document.getElementById('tlKpiRow').innerHTML = blocks.map(b=>`
+    <div class="tl-kpi ${b.key}">
+      <div class="label">${b.label}</div>
+      <div class="value">${b.value}</div>
+    </div>`).join('');
+}
+
+let timelineViewMode = 'calendar';
+let calendarMonth = (function(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
+
+function setTimelineViewMode(mode){
+  timelineViewMode = mode;
+  document.getElementById('timelineCalendarWrap').style.display = mode==='calendar' ? 'block' : 'none';
+  document.getElementById('timelineTableWrap').style.display = mode==='table' ? 'block' : 'none';
+  document.getElementById('viewCalendarBtn').classList.toggle('active', mode==='calendar');
+  document.getElementById('viewTableBtn').classList.toggle('active', mode==='table');
+  if(mode==='calendar') renderCalendar(); else renderTable('timeline');
+}
+
+function filteredTimelineItems(){
+  const f = getTimelineFilterValues();
+  return DATA.timeline.filter(e=>{
+    const hay = [e.campaign,e.content,e.property,e.channel,e.owner,e.notes].join(' ').toLowerCase();
+    if(f.q && !hay.includes(f.q)) return false;
+    if(f.campaign && e.campaign !== f.campaign) return false;
+    if(f.property && e.property !== f.property) return false;
+    if(f.channel && e.channel !== f.channel) return false;
+    if(f.status && e.status !== f.status) return false;
+    return true;
+  });
+}
+
+function renderCalendar(){
+  populateTimelineFilterOptions();
+  const label = calendarMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  document.getElementById('calMonthLabel').textContent = label.toUpperCase();
+
+  const items = filteredTimelineItems().filter(e=>e.publishDate);
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const leadingBlanks = firstDay.getDay();
+  const totalCells = leadingBlanks + daysInMonth;
+  const trailingBlanks = (7 - (totalCells % 7)) % 7;
+
+  let html = '';
+  for(let i=0;i<leadingBlanks;i++) html += '<div class="cal-cell blank"></div>';
+  for(let day=1; day<=daysInMonth; day++){
+    const cellDate = new Date(year, month, day);
+    const dayItems = items.filter(e=> sameDay(parseDate(e.publishDate), cellDate));
+    const isToday = sameDay(cellDate, todayMidnight());
+    const pills = dayItems.map(e=>{
+      const statusClass = 'status-' + slug(e.status||'Not Started');
+      const label = (e.campaign ? e.campaign + ' — ' : '') + e.content;
+      return `<div class="cal-pill ${statusClass}" data-edit-cat="timeline" data-edit-id="${e.id}" title="${esc(label)} (${esc(e.status||'')})">${esc(label)}</div>`;
+    }).join('');
+    html += `<div class="cal-cell"><span class="cal-date-num${isToday?' today':''}">${day}</span>${pills}</div>`;
+  }
+  for(let i=0;i<trailingBlanks;i++) html += '<div class="cal-cell blank"></div>';
+
+  document.getElementById('calBody').innerHTML = html;
+
+  const legend = Object.entries({'Not Started':'#7C8B93','In progress':'#A3782E','Under review':'#033b57','Handed Off':'#AB5233','Published':'#5e7361'})
+    .map(([label,color])=> `<span><span class="legend-dot" style="background:${color}"></span>${label}</span>`).join('');
+  document.getElementById('calLegend').innerHTML = legend;
+}
+
+// ---------- EVENT WIRING ----------
+
+document.querySelectorAll('[data-toggle-form]').forEach(btn=>{
+  btn.addEventListener('click', ()=> toggleForm(btn.dataset.toggleForm));
+});
+
+CATS.filter(c=>c!=='headlines').forEach(cat=>{
+  const form = document.getElementById('form-'+cat);
+  if(form){
+    form.addEventListener('submit', (ev)=> submitEntry(ev, cat));
+  }
+  const searchEl = document.getElementById('search-'+cat);
+  if(searchEl){
+    searchEl.addEventListener('input', ()=> {
+      renderTable(cat);
+      if(cat==='timeline' && timelineViewMode==='calendar') renderCalendar();
+    });
+  }
+});
+
+const filterTodosOwner = document.getElementById('filter-todos-owner');
+if(filterTodosOwner) filterTodosOwner.addEventListener('change', ()=> renderTable('todos'));
+
+['filter-timeline-campaign','filter-timeline-property','filter-timeline-channel','filter-timeline-status'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', ()=> {
+    if(timelineViewMode==='calendar') renderCalendar(); else renderTable('timeline');
+  });
+});
+
+const toggleShowDoneBtn = document.getElementById('toggleShowDoneBtn');
+if(toggleShowDoneBtn){
+  toggleShowDoneBtn.addEventListener('click', ()=>{
+    showCompletedTodos = !showCompletedTodos;
+    toggleShowDoneBtn.classList.toggle('active', showCompletedTodos);
+    toggleShowDoneBtn.textContent = showCompletedTodos ? 'Hide Completed' : 'Show Completed';
+    renderTable('todos');
+  });
+}
+
+document.getElementById('viewCalendarBtn').addEventListener('click', ()=> setTimelineViewMode('calendar'));
+document.getElementById('viewTableBtn').addEventListener('click', ()=> setTimelineViewMode('table'));
+
+document.getElementById('calPrevBtn').addEventListener('click', ()=>{
+  calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth()-1, 1);
+  renderCalendar();
+});
+document.getElementById('calNextBtn').addEventListener('click', ()=>{
+  calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth()+1, 1);
+  renderCalendar();
+});
+document.getElementById('calTodayBtn').addEventListener('click', ()=>{
+  const d = new Date();
+  calendarMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+  renderCalendar();
+});
+
+const errorBannerDismiss = document.getElementById('errorBannerDismiss');
+if(errorBannerDismiss) errorBannerDismiss.addEventListener('click', hideError);
+
+// Delegated click handling for edit/delete buttons and calendar pills.
+document.querySelector('main').addEventListener('click', (ev)=>{
+  const editTarget = ev.target.closest('[data-edit-cat]');
+  if(editTarget){
+    const cat = editTarget.dataset.editCat;
+    switchView(cat);
+    startEdit(cat, editTarget.dataset.editId);
+    return;
+  }
+  const delHeadlineBtn = ev.target.closest('[data-del-headline-id]');
+  if(delHeadlineBtn){
+    deleteHeadline(delHeadlineBtn.dataset.delHeadlineId);
+    return;
+  }
+  const delBtn = ev.target.closest('.del-btn');
+  if(delBtn){
+    const cat = delBtn.dataset.delCat;
+    const id = delBtn.dataset.delId;
+    if(cat && id) deleteEntry(cat, id);
+  }
+});
+
+// Delegated change handling for headline and to-do checkboxes.
+document.querySelector('main').addEventListener('change', (ev)=>{
+  const hb = ev.target.closest('[data-headline-id]');
+  if(hb){ toggleHeadline(hb.dataset.headlineId); return; }
+  const tb = ev.target.closest('[data-todo-id]');
+  if(tb){ toggleTodoStatus(tb.dataset.todoId); return; }
+});
+
+const addHeadlineBtn = document.getElementById('addHeadlineBtn');
+const headlineTitleInput = document.getElementById('headlineTitleInput');
+const headlineOwnerInput = document.getElementById('headlineOwnerInput');
+if(addHeadlineBtn){
+  addHeadlineBtn.addEventListener('click', ()=>{
+    addHeadline(headlineTitleInput.value, headlineOwnerInput.value);
+    headlineTitleInput.value = '';
+    headlineOwnerInput.value = '';
+    headlineTitleInput.focus();
+  });
+}
+if(headlineTitleInput){
+  headlineTitleInput.addEventListener('keydown', (ev)=>{
+    if(ev.key === 'Enter'){
+      ev.preventDefault();
+      addHeadlineBtn.click();
+    }
+  });
+}
+const headlinesArchiveToggle = document.getElementById('headlinesArchiveToggle');
+if(headlinesArchiveToggle){
+  headlinesArchiveToggle.addEventListener('click', ()=>{
+    headlinesArchiveOpen = !headlinesArchiveOpen;
+    document.getElementById('headlinesArchiveList').style.display = headlinesArchiveOpen ? 'block' : 'none';
+    headlinesArchiveToggle.firstChild.textContent = headlinesArchiveOpen ? 'Hide Archived (' : 'Show Archived (';
+  });
+}
+
+(async function init(){
+  if(!supabaseClient){
+    document.getElementById('topMeta').textContent = 'Not connected — add Supabase URL/key at the top of index.html';
+    document.getElementById('kpiRow').innerHTML = '<div class="kpi"><div class="label">Setup Needed</div><div class="value" style="font-size:15px;">Add your Supabase URL and anon key in index.html, run supabase_setup.sql, then redeploy.</div></div>';
+    renderAllTables();
+    renderTimelineKpis();
+    renderCalendar();
+    return;
+  }
+  document.getElementById('topMeta').textContent = 'Loading shared log…';
+  try{
+    await loadAll();
+    renderAllTables();
+    renderHeadlines();
+    renderOverview();
+    renderTimelineKpis();
+    renderCalendar();
+  }catch(e){
+    console.error('init failed', e);
+    document.getElementById('topMeta').textContent = 'Load error — check browser console';
+  }
+})();
+</script>
+</body>
+</html>
