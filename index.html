@@ -400,7 +400,7 @@ footer.foot{
 .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); background:#F4F6F7; border-bottom:1px solid var(--line); }
 .cal-weekdays div{ padding:8px; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); text-align:center; font-family:'Montserrat', sans-serif; }
 .cal-body{ display:grid; grid-template-columns:repeat(7,1fr); }
-.cal-cell{ border-right:1px solid #EFEAE0; border-bottom:1px solid #EFEAE0; min-height:96px; padding:6px; position:relative; }
+.cal-cell{ border-right:1px solid #EFEAE0; border-bottom:1px solid #EFEAE0; min-height:96px; padding:6px; position:relative; overflow:hidden; }
 .cal-cell:nth-child(7n){ border-right:none; }
 .cal-cell.blank{ background:#FAFAF8; }
 .cal-date-num{ font-size:11px; color:var(--ink-soft); font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; display:inline-block; }
@@ -408,12 +408,17 @@ footer.foot{
 .cal-pill{
   margin-top:4px; font-size:10px; padding:3px 6px; border-radius:3px; color:#fff; cursor:pointer;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Montserrat', sans-serif;
+  max-width:100%; box-sizing:border-box;
 }
 .status-notstarted{ background:#7C8B93; }
 .status-inprogress{ background:var(--amber); }
 .status-underreview{ background:var(--navy-soft); }
 .status-handedoff{ background:var(--clay); }
 .status-published{ background:var(--sage); }
+.cal-pill-todo{ background:#fff; border:1px solid var(--navy-soft); color:var(--navy-soft); }
+.cal-pill-todo.overdue{ background:var(--clay-bg); border-color:var(--clay); color:var(--clay); }
+.cal-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-soft); font-family:'Montserrat', sans-serif; justify-content:flex-end; }
+.cal-toggle input{ width:auto; accent-color:var(--navy); }
 .legend-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11px; color:var(--ink-soft); align-items:center; }
 .legend-dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
 </style>
@@ -589,7 +594,7 @@ footer.foot{
             <button class="ghost" id="calNextBtn" type="button">&rarr;</button>
           </div>
           <div class="cal-month-label" id="calMonthLabel"></div>
-          <div></div>
+          <label class="cal-toggle"><input type="checkbox" id="calShowTodos" checked> Show To-Dos</label>
         </div>
         <div class="cal-grid">
           <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
@@ -810,6 +815,7 @@ function submitEntry(ev, cat){
   renderTable(cat);
   renderOverview();
   if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
+  else if(cat==='todos' && timelineViewMode==='calendar'){ renderCalendar(); }
   return false;
 }
 
@@ -819,6 +825,7 @@ function deleteEntry(cat, id){
   renderTable(cat);
   renderOverview();
   if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
+  else if(cat==='todos' && timelineViewMode==='calendar'){ renderCalendar(); }
 }
 
 function switchView(view){
@@ -1017,6 +1024,7 @@ function toggleTodoStatus(id){
   updateRemote('todos', entry);
   renderTable('todos');
   renderOverview();
+  if(timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')) renderCalendar();
 }
 
 let headlinesArchiveOpen = false;
@@ -1185,6 +1193,7 @@ function renderTimelineKpis(){
 }
 
 let timelineViewMode = 'calendar';
+let calendarShowTodos = true;
 let calendarMonth = (function(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
 
 function setTimelineViewMode(mode){
@@ -1223,18 +1232,36 @@ function renderCalendar(){
   const totalCells = leadingBlanks + daysInMonth;
   const trailingBlanks = (7 - (totalCells % 7)) % 7;
 
+  const q = document.getElementById('search-timeline').value.trim().toLowerCase();
+  const openTodos = calendarShowTodos
+    ? DATA.todos.filter(e=>{
+        if(e.status==='Done' || !e.dueDate) return false;
+        if(q){
+          const hay = [e.task,e.owner,e.notes].join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      })
+    : [];
+
   let html = '';
   for(let i=0;i<leadingBlanks;i++) html += '<div class="cal-cell blank"></div>';
   for(let day=1; day<=daysInMonth; day++){
     const cellDate = new Date(year, month, day);
     const dayItems = items.filter(e=> sameDay(parseDate(e.publishDate), cellDate));
+    const dayTodos = openTodos.filter(e=> sameDay(parseDate(e.dueDate), cellDate));
     const isToday = sameDay(cellDate, todayMidnight());
     const pills = dayItems.map(e=>{
       const statusClass = 'status-' + slug(e.status||'Not Started');
-      const label = (e.campaign ? e.campaign + ' — ' : '') + e.content;
-      return `<div class="cal-pill ${statusClass}" data-edit-cat="timeline" data-edit-id="${e.id}" title="${esc(label)} (${esc(e.status||'')})">${esc(label)}</div>`;
+      const fullLabel = (e.campaign ? e.campaign + ' — ' : '') + e.content;
+      return `<div class="cal-pill ${statusClass}" data-edit-cat="timeline" data-edit-id="${e.id}" title="${esc(fullLabel)} (${esc(e.status||'')})">${esc(e.content)}</div>`;
     }).join('');
-    html += `<div class="cal-cell"><span class="cal-date-num${isToday?' today':''}">${day}</span>${pills}</div>`;
+    const todoPills = dayTodos.map(e=>{
+      const overdue = isOverdue(e.dueDate, e.status);
+      const label = 'To-Do: ' + e.task + (e.owner? ' — '+e.owner : '');
+      return `<div class="cal-pill cal-pill-todo${overdue?' overdue':''}" data-edit-cat="todos" data-edit-id="${e.id}" title="${esc(label)}${overdue?' (overdue)':''}">☐ ${esc(e.task)}</div>`;
+    }).join('');
+    html += `<div class="cal-cell"><span class="cal-date-num${isToday?' today':''}">${day}</span>${pills}${todoPills}</div>`;
   }
   for(let i=0;i<trailingBlanks;i++) html += '<div class="cal-cell blank"></div>';
 
@@ -1242,7 +1269,9 @@ function renderCalendar(){
 
   const legend = Object.entries({'Not Started':'#7C8B93','In progress':'#A3782E','Under review':'#033b57','Handed Off':'#AB5233','Published':'#5e7361'})
     .map(([label,color])=> `<span><span class="legend-dot" style="background:${color}"></span>${label}</span>`).join('');
-  document.getElementById('calLegend').innerHTML = legend;
+  document.getElementById('calLegend').innerHTML = legend +
+    '<span><span class="legend-dot" style="background:#fff;border:1px solid var(--navy-soft)"></span>To-Do (open)</span>' +
+    '<span><span class="legend-dot" style="background:var(--clay-bg);border:1px solid var(--clay)"></span>To-Do (overdue)</span>';
 }
 
 // ---------- EVENT WIRING ----------
@@ -1261,6 +1290,7 @@ CATS.filter(c=>c!=='headlines').forEach(cat=>{
     searchEl.addEventListener('input', ()=> {
       renderTable(cat);
       if(cat==='timeline' && timelineViewMode==='calendar') renderCalendar();
+      if(cat==='todos' && timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')) renderCalendar();
     });
   }
 });
@@ -1287,6 +1317,14 @@ if(toggleShowDoneBtn){
 
 document.getElementById('viewCalendarBtn').addEventListener('click', ()=> setTimelineViewMode('calendar'));
 document.getElementById('viewTableBtn').addEventListener('click', ()=> setTimelineViewMode('table'));
+
+const calShowTodosCheckbox = document.getElementById('calShowTodos');
+if(calShowTodosCheckbox){
+  calShowTodosCheckbox.addEventListener('change', ()=>{
+    calendarShowTodos = calShowTodosCheckbox.checked;
+    renderCalendar();
+  });
+}
 
 document.getElementById('calPrevBtn').addEventListener('click', ()=>{
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth()-1, 1);
