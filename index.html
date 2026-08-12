@@ -417,7 +417,9 @@ footer.foot{
 .status-published{ background:var(--sage); }
 .cal-pill-todo{ background:#fff; border:1px solid var(--navy-soft); color:var(--navy-soft); }
 .cal-pill-todo.overdue{ background:var(--clay-bg); border-color:var(--clay); color:var(--clay); }
-.cal-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-soft); font-family:'Montserrat', sans-serif; justify-content:flex-end; }
+.cal-pill-newsletter{ background:var(--navy); color:#fff; }
+.cal-toggle-group{ display:flex; gap:14px; justify-content:flex-end; }
+.cal-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-soft); font-family:'Montserrat', sans-serif; }
 .cal-toggle input{ width:auto; accent-color:var(--navy); }
 .legend-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11px; color:var(--ink-soft); align-items:center; }
 .legend-dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
@@ -594,7 +596,10 @@ footer.foot{
             <button class="ghost" id="calNextBtn" type="button">&rarr;</button>
           </div>
           <div class="cal-month-label" id="calMonthLabel"></div>
-          <label class="cal-toggle"><input type="checkbox" id="calShowTodos" checked> Show To-Dos</label>
+          <div class="cal-toggle-group">
+            <label class="cal-toggle"><input type="checkbox" id="calShowTodos" checked> Show To-Dos</label>
+            <label class="cal-toggle"><input type="checkbox" id="calShowNewsletters" checked> Show Newsletters</label>
+          </div>
         </div>
         <div class="cal-grid">
           <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
@@ -607,6 +612,31 @@ footer.foot{
     <div class="panel" id="timelineTableWrap" style="display:none;">
       <div class="panel-body" style="overflow-x:auto;"><table id="table-timeline"><thead></thead><tbody></tbody></table></div>
     </div>
+
+    <div class="section-header" style="margin-top:28px;">
+      <div><h2>Newsletter Sends</h2><div class="desc">Actual send performance &mdash; pulled from Klaviyo/Mailchimp exports. Shown on the calendar by send date.</div></div>
+      <button class="primary" data-toggle-form="newsletters">+ Add Newsletter Send</button>
+    </div>
+    <form class="entry-form" id="form-newsletters">
+      <div class="form-grid">
+        <div><label>Campaign</label><input required name="campaign" list="campaignSuggestions" placeholder="e.g. Fall Outlook"></div>
+        <div><label>Date Sent</label><input type="date" name="dateSent" required></div>
+        <div><label>Send Time</label><input name="sendTime" placeholder="e.g. 6:00 PM"></div>
+        <div><label>Open Rate</label><input name="openRate" placeholder="e.g. 7.1%"></div>
+        <div><label>Click Rate</label><input name="clickRate" placeholder="e.g. 0.45%"></div>
+        <div><label>Total Clicks</label><input type="number" name="totalClicks"></div>
+        <div><label>Emails Sent</label><input type="number" name="emailsSent"></div>
+      </div>
+      <div class="form-grid full"><div><label>Notes</label><textarea name="notes"></textarea></div></div>
+      <div class="form-actions">
+        <button type="button" class="ghost" data-toggle-form="newsletters">Cancel</button>
+        <button type="submit" class="primary">Save Newsletter Send</button>
+      </div>
+    </form>
+    <div class="filters">
+      <input placeholder="Search newsletter sends..." id="search-newsletters">
+    </div>
+    <div class="panel"><div class="panel-body" style="overflow-x:auto;"><table id="table-newsletters"><thead></thead><tbody></tbody></table></div></div>
   </div>
 
 </main>
@@ -623,10 +653,10 @@ const supabaseClient = (SUPABASE_URL.startsWith('http'))
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-const CATS = ['headlines','todos','timeline'];
-const TABLE_CATS = ['todos','timeline'];
-const CAT_LABEL = {headlines:'Headline', todos:'To-Do', timeline:'Timeline'};
-let DATA = {headlines:[], todos:[], timeline:[]};
+const CATS = ['headlines','todos','timeline','newsletters'];
+const TABLE_CATS = ['todos','timeline','newsletters'];
+const CAT_LABEL = {headlines:'Headline', todos:'To-Do', timeline:'Timeline', newsletters:'Newsletter'};
+let DATA = {headlines:[], todos:[], timeline:[], newsletters:[]};
 let chartInstance = null;
 let showCompletedTodos = false;
 
@@ -634,6 +664,11 @@ function uid(){ return 'e' + Date.now() + Math.random().toString(36).slice(2,8);
 function todayISO(){ return new Date().toISOString(); }
 function todayMidnight(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
 function fmtDate(d){ if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+function fmtNum(n){
+  if(n===undefined||n===null||n==='') return '—';
+  const num = Number(String(n).replace(/,/g,''));
+  return isNaN(num) ? String(n) : num.toLocaleString();
+}
 function parseDate(d){ if(!d) return null; const dt = new Date(d + 'T00:00:00'); return isNaN(dt) ? null : dt; }
 function sameDay(a,b){ return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
 function isOverdue(dueDate, status){
@@ -746,8 +781,8 @@ async function deleteRemote(id){
   }
 }
 
-const SAVE_LABELS = { todos:'Save To-Do', timeline:'Save Timeline Item' };
-const UPDATE_LABELS = { todos:'Update To-Do', timeline:'Update Timeline Item' };
+const SAVE_LABELS = { todos:'Save To-Do', timeline:'Save Timeline Item', newsletters:'Save Newsletter Send' };
+const UPDATE_LABELS = { todos:'Update To-Do', timeline:'Update Timeline Item', newsletters:'Update Newsletter Send' };
 
 function toggleForm(cat){
   const f = document.getElementById('form-'+cat);
@@ -815,7 +850,7 @@ function submitEntry(ev, cat){
   renderTable(cat);
   renderOverview();
   if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
-  else if(cat==='todos' && timelineViewMode==='calendar'){ renderCalendar(); }
+  else if((cat==='todos' || cat==='newsletters') && timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')){ renderCalendar(); }
   return false;
 }
 
@@ -825,7 +860,7 @@ function deleteEntry(cat, id){
   renderTable(cat);
   renderOverview();
   if(cat==='timeline'){ renderTimelineKpis(); renderCalendar(); }
-  else if(cat==='todos' && timelineViewMode==='calendar'){ renderCalendar(); }
+  else if((cat==='todos' || cat==='newsletters') && timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')){ renderCalendar(); }
 }
 
 function switchView(view){
@@ -902,6 +937,24 @@ const TABLE_DEFS = {
       if(statusVal && e.status !== statusVal) return false;
       return true;
     }
+  },
+  newsletters: {
+    headers: ['Campaign','Date Sent','Send Time','Open Rate','Click Rate','Total Clicks','Emails Sent','Notes',''],
+    row: e=> `<tr>
+      <td>${esc(e.campaign)}</td>
+      <td class="num">${fmtDate(e.dateSent)}</td>
+      <td class="week-mark">${esc(e.sendTime)||'—'}</td>
+      <td class="num">${esc(e.openRate)||'—'}</td>
+      <td class="num">${esc(e.clickRate)||'—'}</td>
+      <td class="num">${fmtNum(e.totalClicks)}</td>
+      <td class="num">${fmtNum(e.emailsSent)}</td>
+      <td class="notes">${esc(e.notes)}</td>
+      <td><button class="edit-btn" data-edit-cat="newsletters" data-edit-id="${e.id}">Edit</button><button class="del-btn" data-del-cat="newsletters" data-del-id="${e.id}">✕</button></td>
+    </tr>`,
+    filter: (e,q)=>{
+      const hay = [e.campaign,e.notes].join(' ').toLowerCase();
+      return !q || hay.includes(q);
+    }
   }
 };
 
@@ -932,8 +985,9 @@ function populateTimelineFilterOptions(){
   const curChan = chanSel.value;
   chanSel.innerHTML = '<option value="">All Channels</option>' + chans.map(c=>`<option ${c===curChan?'selected':''}>${esc(c)}</option>`).join('');
 
+  const allCampaigns = [...new Set([...campaigns, ...DATA.newsletters.map(e=>e.campaign).filter(Boolean)])].sort();
   const datalist = document.getElementById('campaignSuggestions');
-  if(datalist) datalist.innerHTML = campaigns.map(c=>`<option value="${esc(c)}">`).join('');
+  if(datalist) datalist.innerHTML = allCampaigns.map(c=>`<option value="${esc(c)}">`).join('');
 }
 
 function renderTable(cat){
@@ -974,6 +1028,15 @@ function renderTable(cat){
       const ad = a.publishDate ? new Date(a.publishDate) : null;
       const bd = b.publishDate ? new Date(b.publishDate) : null;
       if(ad && bd) return ad - bd;
+      if(ad) return -1;
+      if(bd) return 1;
+      return 0;
+    });
+  }else if(cat==='newsletters'){
+    rows.sort((a,b)=>{
+      const ad = a.dateSent ? new Date(a.dateSent) : null;
+      const bd = b.dateSent ? new Date(b.dateSent) : null;
+      if(ad && bd) return bd - ad;
       if(ad) return -1;
       if(bd) return 1;
       return 0;
@@ -1108,6 +1171,7 @@ function renderOverview(){
     if(cat==='headlines') text = `Headline added: "${e.title||''}"`;
     if(cat==='todos') text = `${e.task||'Untitled to-do'} — ${e.status||'status pending'}`;
     if(cat==='timeline') text = `${e.content||'Untitled item'}${e.campaign? ' ('+e.campaign+')':''} — ${e.status||'—'}`;
+    if(cat==='newsletters') text = `${e.campaign||'Untitled send'} sent ${fmtDate(e.dateSent)} — ${e.openRate||'—'} open / ${e.clickRate||'—'} click`;
     return `<div class="activity-row">
       <span class="activity-cat">${CAT_LABEL[cat]}</span>
       <span class="activity-text">${esc(text)}</span>
@@ -1194,6 +1258,7 @@ function renderTimelineKpis(){
 
 let timelineViewMode = 'calendar';
 let calendarShowTodos = true;
+let calendarShowNewsletters = true;
 let calendarMonth = (function(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
 
 function setTimelineViewMode(mode){
@@ -1243,6 +1308,16 @@ function renderCalendar(){
         return true;
       })
     : [];
+  const newsletterSends = calendarShowNewsletters
+    ? DATA.newsletters.filter(e=>{
+        if(!e.dateSent) return false;
+        if(q){
+          const hay = [e.campaign,e.notes].join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      })
+    : [];
 
   let html = '';
   for(let i=0;i<leadingBlanks;i++) html += '<div class="cal-cell blank"></div>';
@@ -1250,6 +1325,7 @@ function renderCalendar(){
     const cellDate = new Date(year, month, day);
     const dayItems = items.filter(e=> sameDay(parseDate(e.publishDate), cellDate));
     const dayTodos = openTodos.filter(e=> sameDay(parseDate(e.dueDate), cellDate));
+    const dayNewsletters = newsletterSends.filter(e=> sameDay(parseDate(e.dateSent), cellDate));
     const isToday = sameDay(cellDate, todayMidnight());
     const pills = dayItems.map(e=>{
       const statusClass = 'status-' + slug(e.status||'Not Started');
@@ -1261,7 +1337,11 @@ function renderCalendar(){
       const label = 'To-Do: ' + e.task + (e.owner? ' — '+e.owner : '');
       return `<div class="cal-pill cal-pill-todo${overdue?' overdue':''}" data-edit-cat="todos" data-edit-id="${e.id}" title="${esc(label)}${overdue?' (overdue)':''}">☐ ${esc(e.task)}</div>`;
     }).join('');
-    html += `<div class="cal-cell"><span class="cal-date-num${isToday?' today':''}">${day}</span>${pills}${todoPills}</div>`;
+    const newsletterPills = dayNewsletters.map(e=>{
+      const metrics = `Open ${e.openRate||'—'} · Click ${e.clickRate||'—'} · ${fmtNum(e.totalClicks)} clicks · ${fmtNum(e.emailsSent)} sent`;
+      return `<div class="cal-pill cal-pill-newsletter" data-edit-cat="newsletters" data-edit-id="${e.id}" title="${esc(e.campaign)} — ${esc(metrics)}">✉ ${esc(e.campaign)}</div>`;
+    }).join('');
+    html += `<div class="cal-cell"><span class="cal-date-num${isToday?' today':''}">${day}</span>${pills}${todoPills}${newsletterPills}</div>`;
   }
   for(let i=0;i<trailingBlanks;i++) html += '<div class="cal-cell blank"></div>';
 
@@ -1271,7 +1351,8 @@ function renderCalendar(){
     .map(([label,color])=> `<span><span class="legend-dot" style="background:${color}"></span>${label}</span>`).join('');
   document.getElementById('calLegend').innerHTML = legend +
     '<span><span class="legend-dot" style="background:#fff;border:1px solid var(--navy-soft)"></span>To-Do (open)</span>' +
-    '<span><span class="legend-dot" style="background:var(--clay-bg);border:1px solid var(--clay)"></span>To-Do (overdue)</span>';
+    '<span><span class="legend-dot" style="background:var(--clay-bg);border:1px solid var(--clay)"></span>To-Do (overdue)</span>' +
+    '<span><span class="legend-dot" style="background:var(--navy)"></span>Newsletter Sent</span>';
 }
 
 // ---------- EVENT WIRING ----------
@@ -1290,7 +1371,7 @@ CATS.filter(c=>c!=='headlines').forEach(cat=>{
     searchEl.addEventListener('input', ()=> {
       renderTable(cat);
       if(cat==='timeline' && timelineViewMode==='calendar') renderCalendar();
-      if(cat==='todos' && timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')) renderCalendar();
+      if((cat==='todos' || cat==='newsletters') && timelineViewMode==='calendar' && document.getElementById('view-timeline').classList.contains('active')) renderCalendar();
     });
   }
 });
@@ -1322,6 +1403,13 @@ const calShowTodosCheckbox = document.getElementById('calShowTodos');
 if(calShowTodosCheckbox){
   calShowTodosCheckbox.addEventListener('change', ()=>{
     calendarShowTodos = calShowTodosCheckbox.checked;
+    renderCalendar();
+  });
+}
+const calShowNewslettersCheckbox = document.getElementById('calShowNewsletters');
+if(calShowNewslettersCheckbox){
+  calShowNewslettersCheckbox.addEventListener('change', ()=>{
+    calendarShowNewsletters = calShowNewslettersCheckbox.checked;
     renderCalendar();
   });
 }
