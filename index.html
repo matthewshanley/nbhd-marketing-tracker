@@ -1330,7 +1330,8 @@ function renderCalendar(){
     const pills = dayItems.map(e=>{
       const statusClass = 'status-' + slug(e.status||'Not Started');
       const fullLabel = (e.campaign ? e.campaign + ' — ' : '') + e.content;
-      return `<div class="cal-pill ${statusClass}" data-edit-cat="timeline" data-edit-id="${e.id}" title="${esc(fullLabel)} (${esc(e.status||'')})">${esc(e.content)}</div>`;
+      const pillLabel = e.campaign || e.content;
+      return `<div class="cal-pill ${statusClass}" data-edit-cat="timeline" data-edit-id="${e.id}" title="${esc(fullLabel)} (${esc(e.status||'')})">${esc(pillLabel)}</div>`;
     }).join('');
     const todoPills = dayTodos.map(e=>{
       const overdue = isOverdue(e.dueDate, e.status);
