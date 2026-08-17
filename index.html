@@ -321,7 +321,7 @@ tr.overdue td{ background:var(--clay-bg); }
 tr.todo-done td{ color:var(--ink-soft); }
 tr.todo-done td:nth-child(2){ text-decoration:line-through; }
 td.num{ font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; text-align:right; white-space:nowrap; }
-td.notes{ max-width:220px; color:var(--ink-soft); }
+td.notes{ max-width:220px; color:var(--ink-soft); overflow-wrap:anywhere; word-break:break-word; }
 .tag{
   display:inline-block;
   font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums;
@@ -367,6 +367,17 @@ td.notes{ max-width:220px; color:var(--ink-soft); }
 .activity-text{ font-size:13px; }
 .activity-date{ margin-left:auto; font-family:'Montserrat', sans-serif; font-variant-numeric: tabular-nums; font-size:11px; color:var(--ink-soft); white-space:nowrap; }
 .headline-add-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.doc-list{ margin-bottom:8px; }
+.doc-row{
+  display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #EFEAE0; font-size:13px;
+}
+.doc-row:last-child{ border-bottom:none; }
+.doc-row a{ color:var(--navy-soft); text-decoration:none; flex:1; overflow-wrap:anywhere; }
+.doc-row a:hover{ text-decoration:underline; }
+.doc-upload-status{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; font-family:'Montserrat', sans-serif; }
+input[type=file]{
+  border:1px dashed var(--line); background:#FCFBF8; padding:8px 9px; border-radius:var(--radius); font-size:12.5px;
+}
 .headline-add-row input[type=text]{ flex:2; min-width:220px; }
 .headline-add-row select{ flex:0 0 130px; }
 .headline-row{
@@ -508,6 +519,12 @@ footer.foot{
         </div>
       </div>
       <div class="form-grid full"><div><label>Notes</label><textarea name="notes"></textarea></div></div>
+      <div class="form-grid full">
+        <label>Attachments</label>
+        <div id="docList-todos" class="doc-list"></div>
+        <input type="file" id="docInput-todos" multiple>
+        <div class="doc-upload-status" id="docStatus-todos"></div>
+      </div>
       <div class="form-actions">
         <button type="button" class="ghost" data-toggle-form="todos">Cancel</button>
         <button type="submit" class="primary">Save To-Do</button>
@@ -562,6 +579,12 @@ footer.foot{
         <div><label>CTA Link</label><input name="ctaLink" placeholder="https://..."></div>
       </div>
       <div class="form-grid full"><div><label>Notes</label><textarea name="notes"></textarea></div></div>
+      <div class="form-grid full">
+        <label>Attachments</label>
+        <div id="docList-timeline" class="doc-list"></div>
+        <input type="file" id="docInput-timeline" multiple>
+        <div class="doc-upload-status" id="docStatus-timeline"></div>
+      </div>
       <div class="form-actions">
         <button type="button" class="ghost" data-toggle-form="timeline">Cancel</button>
         <button type="submit" class="primary">Save Timeline Item</button>
@@ -781,6 +804,65 @@ async function deleteRemote(id){
   }
 }
 
+// ---------- DOCUMENT ATTACHMENTS (To-Dos + Timeline) ----------
+
+const formDocsState = { todos: [], timeline: [] };
+
+async function uploadDocument(cat, workingId, file){
+  if(!supabaseClient) return null;
+  const path = `${cat}/${workingId}/${Date.now()}_${file.name}`;
+  try{
+    const { error } = await supabaseClient.storage.from('documents').upload(path, file);
+    if(error){
+      console.error('upload failed', error);
+      showError(`Upload failed for "${file.name}". Details: ${error.message || error}`);
+      return null;
+    }
+    const { data } = supabaseClient.storage.from('documents').getPublicUrl(path);
+    return { name: file.name, url: data.publicUrl, path };
+  }catch(e){
+    console.error('upload failed', e);
+    showError(`Upload failed for "${file.name}". Check your connection and try again.`);
+    return null;
+  }
+}
+
+async function deleteDocumentFromStorage(path){
+  if(!supabaseClient || !path) return;
+  try{
+    await supabaseClient.storage.from('documents').remove([path]);
+  }catch(e){
+    console.error('document delete failed', e);
+  }
+}
+
+function renderDocList(cat){
+  const container = document.getElementById('docList-'+cat);
+  if(!container) return;
+  const docs = formDocsState[cat] || [];
+  container.innerHTML = docs.length ? docs.map(d => `
+    <div class="doc-row">
+      <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.name)}</a>
+      <button type="button" class="del-btn remove-doc-row" data-doc-cat="${cat}" data-doc-path="${esc(d.path)}">✕</button>
+    </div>`).join('') : '<div class="doc-upload-status">No attachments yet.</div>';
+}
+
+async function handleDocInputChange(cat, inputEl){
+  const files = Array.from(inputEl.files || []);
+  if(!files.length) return;
+  const form = document.getElementById('form-'+cat);
+  const workingId = form.dataset.workingId;
+  const statusEl = document.getElementById('docStatus-'+cat);
+  if(statusEl) statusEl.textContent = `Uploading ${files.length} file${files.length===1?'':'s'}...`;
+  for(const file of files){
+    const result = await uploadDocument(cat, workingId, file);
+    if(result) formDocsState[cat].push(result);
+  }
+  renderDocList(cat);
+  if(statusEl) statusEl.textContent = '';
+  inputEl.value = '';
+}
+
 const SAVE_LABELS = { todos:'Save To-Do', timeline:'Save Timeline Item', newsletters:'Save Newsletter Send' };
 const UPDATE_LABELS = { todos:'Update To-Do', timeline:'Update Timeline Item', newsletters:'Update Newsletter Send' };
 
@@ -791,6 +873,11 @@ function toggleForm(cat){
     f.classList.remove('open');
   }else{
     f.reset();
+    if(formDocsState[cat] !== undefined){
+      formDocsState[cat] = [];
+      f.dataset.workingId = uid();
+      renderDocList(cat);
+    }
     f.classList.add('open');
   }
   delete f.dataset.editingId;
@@ -811,6 +898,11 @@ function startEdit(cat, id){
   const form = document.getElementById('form-'+cat);
   populateForm(form, entry);
   form.dataset.editingId = id;
+  if(formDocsState[cat] !== undefined){
+    form.dataset.workingId = id;
+    formDocsState[cat] = [...(entry.documents || [])];
+    renderDocList(cat);
+  }
   form.classList.add('open');
   const btn = form.querySelector('button[type="submit"]');
   if(btn) btn.textContent = UPDATE_LABELS[cat] || 'Update';
@@ -823,8 +915,10 @@ function submitEntry(ev, cat){
   const fd = new FormData(form);
   const obj = {};
   for(const [k,v] of fd.entries()) obj[k] = v;
+  if(formDocsState[cat] !== undefined) obj.documents = formDocsState[cat];
 
   const editingId = form.dataset.editingId;
+  const workingId = form.dataset.workingId;
   if(editingId){
     const idx = DATA[cat].findIndex(e=>e.id===editingId);
     const original = idx>=0 ? DATA[cat][idx] : null;
@@ -836,7 +930,7 @@ function submitEntry(ev, cat){
     if(idx>=0) DATA[cat][idx] = merged; else DATA[cat].unshift(merged);
     updateRemote(cat, merged);
   }else{
-    obj.id = uid();
+    obj.id = workingId || uid();
     obj.loggedDate = todayISO();
     DATA[cat].unshift(obj);
     insertRemote(cat, obj);
@@ -845,6 +939,10 @@ function submitEntry(ev, cat){
   form.reset();
   form.classList.remove('open');
   delete form.dataset.editingId;
+  if(formDocsState[cat] !== undefined){
+    formDocsState[cat] = [];
+    renderDocList(cat);
+  }
   const btn = form.querySelector('button[type="submit"]');
   if(btn) btn.textContent = SAVE_LABELS[cat] || 'Save';
   renderTable(cat);
@@ -887,10 +985,13 @@ const STATUS_TAG = {
 
 const TABLE_DEFS = {
   todos: {
-    headers: ['Done','Task','Owner','Due Date','Logged','Notes',''],
+    headers: ['Done','Task','Owner','Due Date','Logged','Notes','Docs',''],
     row: e=>{
       const isDone = e.status === 'Done';
       const overdue = isOverdue(e.dueDate, e.status);
+      const docsHtml = (e.documents||[]).length
+        ? (e.documents||[]).map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.name)}</a>`).join('<br>')
+        : '—';
       return `<tr class="${isDone?'todo-done':''} ${overdue?'overdue':''}">
         <td><input type="checkbox" ${isDone?'checked':''} data-todo-id="${e.id}"></td>
         <td>${esc(e.task)}</td>
@@ -898,6 +999,7 @@ const TABLE_DEFS = {
         <td class="num">${e.dueDate? (overdue? '<span class="tag clay">'+fmtDate(e.dueDate)+' — overdue</span>' : fmtDate(e.dueDate)) : '—'}</td>
         <td class="week-mark">${fmtDate(e.loggedDate)}<br>${esc(e.loggedBy||'')}</td>
         <td class="notes">${esc(e.notes)}</td>
+        <td class="notes">${docsHtml}</td>
         <td><button class="edit-btn" data-edit-cat="todos" data-edit-id="${e.id}">Edit</button><button class="del-btn" data-del-cat="todos" data-del-id="${e.id}">✕</button></td>
       </tr>`;
     },
@@ -910,10 +1012,13 @@ const TABLE_DEFS = {
     }
   },
   timeline: {
-    headers: ['Campaign','Content','Property','Type','Channel','Due Date','Publish Date','Owner','Status','Notes',''],
+    headers: ['Campaign','Content','Property','Type','Channel','Due Date','Publish Date','Owner','Status','Notes','Docs',''],
     row: e=>{
       const statusColor = STATUS_TAG[e.status] || 'gray';
       const linkHtml = e.ctaLink ? `<div class="notes"><a href="${esc(e.ctaLink)}" target="_blank" rel="noopener">Link ↗</a></div>` : '';
+      const docsHtml = (e.documents||[]).length
+        ? (e.documents||[]).map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.name)}</a>`).join('<br>')
+        : '—';
       return `<tr>
         <td>${esc(e.campaign) || '<span style="color:var(--ink-soft)">—</span>'}</td>
         <td>${esc(e.content)}${linkHtml}</td>
@@ -925,6 +1030,7 @@ const TABLE_DEFS = {
         <td>${esc(e.owner)}</td>
         <td><span class="tag ${statusColor}">${esc(e.status||'')}</span></td>
         <td class="notes">${esc(e.notes)}</td>
+        <td class="notes">${docsHtml}</td>
         <td><button class="edit-btn" data-edit-cat="timeline" data-edit-id="${e.id}">Edit</button><button class="del-btn" data-del-cat="timeline" data-del-id="${e.id}">✕</button></td>
       </tr>`;
     },
@@ -1380,6 +1486,13 @@ CATS.filter(c=>c!=='headlines').forEach(cat=>{
 const filterTodosOwner = document.getElementById('filter-todos-owner');
 if(filterTodosOwner) filterTodosOwner.addEventListener('change', ()=> renderTable('todos'));
 
+['todos','timeline'].forEach(cat=>{
+  const docInput = document.getElementById('docInput-'+cat);
+  if(docInput){
+    docInput.addEventListener('change', ()=> handleDocInputChange(cat, docInput));
+  }
+});
+
 ['filter-timeline-campaign','filter-timeline-property','filter-timeline-channel','filter-timeline-status'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', ()=> {
@@ -1445,6 +1558,15 @@ document.querySelector('main').addEventListener('click', (ev)=>{
   const delHeadlineBtn = ev.target.closest('[data-del-headline-id]');
   if(delHeadlineBtn){
     deleteHeadline(delHeadlineBtn.dataset.delHeadlineId);
+    return;
+  }
+  const removeDocBtn = ev.target.closest('.remove-doc-row');
+  if(removeDocBtn){
+    const cat = removeDocBtn.dataset.docCat;
+    const path = removeDocBtn.dataset.docPath;
+    formDocsState[cat] = (formDocsState[cat] || []).filter(d => d.path !== path);
+    deleteDocumentFromStorage(path);
+    renderDocList(cat);
     return;
   }
   const delBtn = ev.target.closest('.del-btn');
