@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ECG / NBHD Marketing Meeting Tracker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
@@ -434,6 +435,44 @@ footer.foot{
 .cal-toggle input{ width:auto; accent-color:var(--navy); }
 .legend-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11px; color:var(--ink-soft); align-items:center; }
 .legend-dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 640px){
+  header.top{ padding:14px 16px 0 16px; }
+  h1.brand{ font-size:17px; }
+  .top-meta{ text-align:left; width:100%; order:3; }
+  nav.tabs{
+    padding:0 16px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{ display:none; }
+  nav.tabs button{ padding:12px 12px; white-space:nowrap; flex-shrink:0; }
+
+  main{ padding:16px 12px 40px 12px; }
+
+  .kpi-row, .tl-kpi-row{ grid-template-columns:repeat(2, 1fr); }
+
+  .form-grid{ grid-template-columns:1fr; }
+
+  .filters{ flex-direction:column; align-items:stretch; }
+  .filters input, .filters select{ width:100%; min-width:0; }
+
+  .cal-controls{ flex-direction:column; align-items:stretch; }
+  .cal-toggle-group{ justify-content:flex-start; }
+  .cal-month-label{ text-align:left; min-width:0; }
+
+  /* The 7-column month grid can't shrink below a usable cell size, so let
+     it scroll horizontally as a fixed-width unit instead of squeezing. */
+  .cal-grid{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .cal-weekdays, .cal-body{ min-width:640px; }
+
+  .view-toggle{ width:100%; }
+  .view-toggle button{ flex:1; }
+
+  table{ font-size:11.5px; }
+  th, td{ padding:7px 8px; }
+  td.notes{ max-width:140px; }
+}
 </style>
 </head>
 <body>
